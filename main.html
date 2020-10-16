@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>main</title>
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<script src="js/jquery-3.5.1.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<style type="text/css">
+	.form-control{
+		max-width: 500px;
+		margin: 0 auto;
+	}
+	.form-group{
+		margin-left: 0px;
+		margin-right: 0px;
+	}
+	.flex{
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		align-content: flex-start;
+	}
+	.flex-content {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		align-content: flex-start;
+		border:1px solid #ddd;
+		min-height: 500px;
+		background-color: #f2f2f2;
+	}
+	.label-default {
+		font-size: 20px;
+	  max-height: 28px;
+	  margin: 7px
+	}
+	</style>
+</head>
+<body style="background-color: #f2f2f2">
+	<div class="container" style="border:solid 2px #ddd;background-color:#5895b6;padding: 2px">
+		<div class="flex">
+			<p id="welcome" style="margin: 7px;color: #f3f3f3;"></p>
+			<button id="logoutButton" class="btn btn-default" style="color:#666;" onclick="logout()">退出登录
+			</button>
+		</div>
+		<h1 style="color:#fff">事项清单</h1>
+		<div>
+		<ul class="nav nav-tabs" style="background-color: #f3f3f3">
+			<li class="active"><a  data-toggle="tab" href="#tab1">待办事项</a></li>
+			<li ><a data-toggle="tab" href="#tab2">完成事项</a></li>
+			<li>
+
+			<button class="btn btn-primary btn-default" style="padding: 5px;margin: 5px;" data-toggle="modal" data-target="#addItem">
+   				添加待办事项
+			</button>
+		</li>
+		</ul>
+
+		</div>
+		 <div class="tab-content">
+		 	<div id="tab1" class="tab-pane fade in active">
+				<div class="flex-content" id="flex">
+				</div>
+			</div>
+			<div id="tab2" class="tab-pane fade">
+				<div class="flex-content" id="flexFinish">
+				</div>
+			</div>
+		</div>
+</div>
+
+			<div class="modal fade" id="addItem" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                  ×
+            </button>
+						</div>
+						<div class="modal-body">
+							<form id="loginForm" class="form-horizontal" role="form" name="loginForm" method="post">
+	<div class="form-group">
+		<input type="text" class="form-control" id="itemName"  placeholder="事项标题">
+	</div>
+	<div>
+		<textarea class="form-control" rows="15" id="itemContent" placeholder="事项内容"></textarea>
+	</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" onclick="clearAll()">重置</button>
+							<button type="button" class="btn btn-default" data-dismiss="modal">关闭
+            </button>
+							<button type="button" class="btn btn-primary" data-dismiss="modal" onclick="addItem()">
+               提交
+            </button>
+						</div>
+					</div>
+					<!-- /.modal-content -->
+				</div>
+				<!-- /.modal -->
+			</div>
+
+			<div class="modal fade" id="showItem" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                  ×
+            </button>
+						</div>
+						<div class="modal-body">
+							<form id="loginForm" class="form-horizontal" role="form" name="loginForm" method="post">
+								<div class="form-group">
+									<input type="text" class="form-control" id="showItemName"  placeholder="事项标题" disabled="true">
+								</div>
+								<div>
+									<textarea class="form-control" rows="15" id="showItemContent" placeholder="事项内容" disabled="true"></textarea>
+								</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" id="deleteButton" class="btn btn-default" onclick="confirmDelete()">删除</button>
+							<button type="button" id="finishButton" class="btn btn-default" onclick="finishItem()" data-dismiss="modal">完成</button>
+							<button type="button" class="btn btn-default" data-dismiss="modal">关闭
+            </button>
+						</div>
+					</div>
+					<!-- /.modal-content -->
+				</div>
+				<!-- /.modal -->
+			</div>
+
+</body>
+<script type="text/javascript">
+	
+	var username;
+	var data;
+	var dataFinish;
+	init();
+	function init(){
+    username=localStorage.getItem("username");
+    let token=localStorage.getItem("token");
+    if(username==null){
+    	alert("未登录");
+    	return window.location.href="login.html";
+    }
+    if(token==null){
+    	alert("登录失效");
+    	return window.location.href="login.html";
+    }
+    if(localStorage.getItem(username)==null){
+    	alert("用户不存在");
+    	return window.location.href="login.html";
+    }
+    if(localStorage.getItem("token_"+username)==null){
+    	alert("登录失效");
+    	return window.location.href="login.html";
+    }
+    document.getElementById("welcome").innerHTML="欢迎用户"+username.split('_')[1];
+    refreshData();
+};
+	
+	function refreshData(){
+	    let arrData=localStorage.getItem("itemData");
+	    if(arrData==null)
+	    	arrData={};
+	    else arrData=JSON.parse(arrData);
+	    data=arrData;
+	    console.log(arrData);
+		arrData=localStorage.getItem("itemDataFinish");
+	    if(arrData==null)
+	    	arrData={};
+	    else arrData=JSON.parse(arrData);
+	    dataFinish=arrData;
+	    console.log(arrData);
+	    let flex=document.getElementById("flex");
+	    flex.innerHTML="";
+	    for (var i = 0; i < data.length; i++) {
+	    	let inner="<span class='label label-default' id="+i+
+	    		" onclick='showItem( false ,"+i+")' style='cursor: pointer;' data-toggle='modal' data-target='#showItem'>"+data[i]["itemName"]+"</span>"
+	    	flex.innerHTML+=inner;
+	    }
+	    flex=document.getElementById("flexFinish");
+	    flex.innerHTML="";
+	    for (var i = 0; i < dataFinish.length; i++) {
+	    	let inner="<span class='label label-default' id="+i+
+	    		" onclick='showItem(true,"+i+")' style='cursor: pointer;'  finish='true' data-toggle='modal' data-target='#showItem'>"+dataFinish[i]["itemName"]+"</span>"
+	    	flex.innerHTML+=inner;
+	    }
+	}
+
+	function logout(){
+		localStorage.removeItem("token_"+username);
+		localStorage.removeItem("username");
+		localStorage.removeItem("token")
+		window.location.href='login.html';
+		alert("登出成功");
+		window.event.returnValue=false;
+	}
+
+	function showItem(finish,id){
+		let dataArr;
+		if(finish)
+			dataArr=dataFinish;
+		else dataArr=data;
+	 	document.getElementById("showItemName").value=	dataArr[id]["itemName"];
+	 	document.getElementById("showItemContent").innerHTML=	dataArr[id]["itemContent"];
+	 	let showItem=document.getElementById("showItem");
+	 	showItem.finish=finish;
+	 	showItem.itemID=id;
+	 	if(finish)
+	 		document.getElementById("finishButton").innerHTML="设为代办";
+	 	else
+	 		document.getElementById("finishButton").innerHTML="设为完成";
+	}
+
+	function addItem(){
+		let itemName=document.getElementById("itemName").value;
+		if(itemName==null||itemName==""||itemName.length>24){
+			alert("事项名长度应为1~24");
+			return;
+		}
+		let itemContent=document.getElementById("itemContent").value;
+		let itemData=localStorage.getItem("itemData");
+		let arrObj;
+		if(itemData==null)
+			arrObj=[];
+		else{
+			arrObj = JSON.parse(itemData);
+		}
+		arrObj.push({"itemName":itemName,"itemContent":itemContent});
+		localStorage.setItem("itemData",JSON.stringify(arrObj));
+		clearAll();
+		refreshData();
+	}
+
+	function confirmDelete(){
+		 if (confirm("确定删除吗？")) {
+			let showItem=document.getElementById("showItem");
+			//showItem.modal="hide";
+			deleteItem(showItem.finish,showItem.itemID);
+			$('#showItem').modal('hide');
+        }
+        else return;
+	}
+
+	function deleteItem(finish,id){
+		let itemData;
+		let arrObj;
+		let key;
+		if(finish){
+			key="itemDataFinish";
+		}
+		else{
+			key="itemData";
+		}
+		itemData=localStorage.getItem(key);
+		arrObj=JSON.parse(itemData);
+		arrObj.splice(id,1);
+		localStorage.setItem(key,JSON.stringify(arrObj));
+		refreshData();
+	}
+
+	function finishItem(){
+		let showItem=document.getElementById("showItem");
+		let arrObjFrom;
+		let arrObjTo;
+		let item;
+		let nameFrom;
+		let nameTo;
+		if(showItem.finish){
+			nameFrom="itemDataFinish";
+			nameTo="itemData";
+		}
+		else{
+			nameFrom="itemData";
+			nameTo="itemDataFinish";
+		}
+		arrObjFrom=JSON.parse(localStorage.getItem(nameFrom));
+		arrObjTo=JSON.parse(localStorage.getItem(nameTo));
+		if(null==arrObjTo)
+			arrObjTo=[];
+		item=arrObjFrom[showItem.itemID];
+		arrObjTo.push(item);
+		localStorage.setItem(nameFrom,JSON.stringify(arrObjFrom));
+		localStorage.setItem(nameTo,JSON.stringify(arrObjTo));
+		deleteItem(showItem.finish,showItem.itemID);
+	}
+
+	function clearAll(){
+		clearItemName();
+		clearItemContent();
+	}
+
+	function clearItemName(){
+		document.getElementById("itemName").value="";
+	}
+
+	function clearItemContent(){
+		document.getElementById("itemContent").value="";
+	}
+</script>
+</html>
